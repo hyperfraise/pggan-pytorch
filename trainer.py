@@ -175,7 +175,7 @@ class trainer:
             # increase linearly every tick, and grow network structure.
             prev_resl = floor(self.resl)
             f = open("continue.txt", "r")
-            if int(f.read()):
+            if int(f.read()) and not self.flag_flush_gen and not self.flag_flush_dis:
                 f.close()
                 print("Shift phases")
                 self.resl = floor(self.resl + 1)
@@ -186,11 +186,15 @@ class trainer:
             f.close()
             self.resl = max(2, min(10.5, self.resl))  # clamping, range: 4 ~ 1024
             # flush network.
-            if (
-                self.flag_flush_gen
-                and self.resl % 1.0 >= (self.trns_tick + self.stab_tick) * delta
-                and prev_resl != 2
+            f = open("continue.txt", "r")
+            if self.flag_flush_gen and (
+                (
+                    self.resl % 1.0 >= (self.trns_tick + self.stab_tick) * delta
+                    and prev_resl != 2
+                )
+                or int(f.read())
             ):
+                f.close()
                 if self.fadein["gen"] is not None:
                     self.fadein["gen"].update_alpha(d_alpha)
                     self.complete["gen"] = self.fadein["gen"].alpha * 100
@@ -201,9 +205,12 @@ class trainer:
                 self.fadein["gen"] = None
                 self.complete["gen"] = 0.0
                 self.phase = "dtrns"
-            elif (
-                self.flag_flush_dis and floor(self.resl) != prev_resl and prev_resl != 2
+                f = open("continue.txt", "w")
+                f.write("0")
+            elif self.flag_flush_dis and (
+                (floor(self.resl) != prev_resl and prev_resl != 2) or int(f.read())
             ):
+                f.close()
                 if self.fadein["dis"] is not None:
                     self.fadein["dis"].update_alpha(d_alpha)
                     self.complete["dis"] = self.fadein["dis"].alpha * 100
@@ -214,6 +221,9 @@ class trainer:
                 self.complete["dis"] = 0.0
                 if floor(self.resl) < self.max_resl and self.phase != "final":
                     self.phase = "gtrns"
+                f = open("continue.txt", "w")
+                f.write("0")
+            f.close()
 
             # grow network.
             if floor(self.resl) != prev_resl and floor(self.resl) < self.max_resl + 1:
