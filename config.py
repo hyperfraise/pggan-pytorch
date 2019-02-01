@@ -15,7 +15,7 @@ parser.add_argument("--n_gpu", type=int, default=1)  # for Multi-GPU training.
 ## training parameters.
 parser.add_argument("--lr", type=float, default=0.001)  # learning rate.
 parser.add_argument(
-    "--lr_decay", type=float, default=0.87
+    "--lr_decay", type=float, default=0.9
 )  # learning rate decay at every resolution transition.
 parser.add_argument(
     "--eps_drift", type=float, default=0.001
