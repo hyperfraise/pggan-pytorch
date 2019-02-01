@@ -11,6 +11,7 @@ from tqdm import tqdm
 import tf_recorder as tensorboard
 import utils as utils
 import numpy as np
+from multiprocessing import Manager, Value
 
 # import tensorflow as tf
 
@@ -91,8 +92,8 @@ class trainer:
         if self.use_cuda:
             self.mse = self.mse.cuda()
             torch.cuda.manual_seed(config.random_seed)
-            self.G = torch.nn.DataParallel(self.G, device_ids=[0, 1]).cuda(device=0)
-            self.D = torch.nn.DataParallel(self.D, device_ids=[0, 1]).cuda(device=0)
+            self.G = torch.nn.DataParallel(self.G, device_ids=[0]).cuda(device=0)
+            self.D = torch.nn.DataParallel(self.D, device_ids=[0]).cuda(device=0)
 
         # define tensors, ship model to cuda, and get dataloader.
         self.renew_everything()
@@ -166,15 +167,24 @@ class trainer:
 
         prev_kimgs = self.kimgs
         self.kimgs = self.kimgs + self.batchsize
+        print((self.kimgs % self.TICK), (prev_kimgs % self.TICK))
         if (self.kimgs % self.TICK) < (prev_kimgs % self.TICK):
             self.globalTick = self.globalTick + 1
             if self.resuming and self.globalTick > self.last_iteration:
                 self.resuming = False
             # increase linearly every tick, and grow network structure.
             prev_resl = floor(self.resl)
-            self.resl = self.resl + delta
+            f = open("continue.txt", "r")
+            if int(f.read()):
+                f.close()
+                print("Shift phases")
+                self.resl = floor(self.resl + 1)
+                f = open("continue.txt", "w")
+                f.write("0")
+            else:
+                self.resl = self.resl + delta
+            f.close()
             self.resl = max(2, min(10.5, self.resl))  # clamping, range: 4 ~ 1024
-
             # flush network.
             if (
                 self.flag_flush_gen
@@ -208,9 +218,9 @@ class trainer:
             # grow network.
             if floor(self.resl) != prev_resl and floor(self.resl) < self.max_resl + 1:
                 self.lr = self.lr * float(self.config.lr_decay)
-                self.G.grow_network(floor(self.resl))
+                self.G.module.grow_network(floor(self.resl))
                 # self.Gs.grow_network(floor(self.resl))
-                self.D.grow_network(floor(self.resl))
+                self.D.module.grow_network(floor(self.resl))
                 self.renew_everything()
                 self.fadein["gen"] = dict(self.G.module.model.named_children())[
                     "fadein_block"
@@ -335,7 +345,7 @@ class trainer:
         self.z_test = torch.FloatTensor(self.loader.batchsize, self.nz)
         if self.use_cuda:
             self.z_test = self.z_test.cuda()
-        self.z_test = Variable(self.z_test, volatile=True)
+
         self.z_test.data.resize_(self.loader.batchsize, self.nz).normal_(0.0, 1.0)
 
         for step in range(2, self.max_resl + 1 + 5):
@@ -382,21 +392,22 @@ class trainer:
                 self.opt_g.step()
 
                 # logging.
-                log_msg = " [E:{0}][T:{1}][{2:6}/{3:6}]  errD: {4:.4f} | errG: {5:.4f} | [lr:{11:.5f}][cur:{6:.3f}][resl:{7:4}][{8}][{9:.1f}%][{10:.1f}%]".format(
-                    self.epoch,
-                    self.globalTick,
-                    self.stack,
-                    len(self.loader.dataset),
-                    loss_d.item(),
-                    loss_g.item(),
-                    self.resl,
-                    int(pow(2, floor(self.resl))),
-                    self.phase,
-                    self.complete["gen"],
-                    self.complete["dis"],
-                    self.lr,
-                )
-                tqdm.write(log_msg)
+                if (iter - 1) % 10:
+                    log_msg = " [E:{0}][T:{1}][{2:6}/{3:6}]  errD: {4:.4f} | errG: {5:.4f} | [lr:{11:.5f}][cur:{6:.3f}][resl:{7:4}][{8}][{9:.1f}%][{10:.1f}%]".format(
+                        self.epoch,
+                        self.globalTick,
+                        self.stack,
+                        len(self.loader.dataset),
+                        loss_d.item(),
+                        loss_g.item(),
+                        self.resl,
+                        int(pow(2, floor(self.resl))),
+                        self.phase,
+                        self.complete["gen"],
+                        self.complete["dis"],
+                        self.lr,
+                    )
+                    tqdm.write(log_msg)
 
                 # save model.
                 self.snapshot("repo/model")
@@ -465,6 +476,8 @@ class trainer:
                 "resl": self.resl,
                 "state_dict": self.G.module.state_dict(),
                 "optimizer": self.opt_g.state_dict(),
+                "globalIter": self.globalIter,
+                "globalTick": self.globalTick,
             }
             return state
         elif target == "dis":
@@ -472,6 +485,8 @@ class trainer:
                 "resl": self.resl,
                 "state_dict": self.D.module.state_dict(),
                 "optimizer": self.opt_d.state_dict(),
+                "globalIter": self.globalIter,
+                "globalTick": self.globalTick,
             }
             return state
 
