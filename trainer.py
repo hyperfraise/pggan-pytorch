@@ -175,7 +175,6 @@ class trainer:
 
         prev_kimgs = self.kimgs
         self.kimgs = self.kimgs + self.batchsize
-        print((self.kimgs % self.TICK), (prev_kimgs % self.TICK))
         if (self.kimgs % self.TICK) < (prev_kimgs % self.TICK):
             self.globalTick = self.globalTick + 1
             if self.resuming and self.globalTick > self.last_iteration:
