@@ -14,6 +14,13 @@ import numpy as np
 from multiprocessing import Manager, Value
 
 # import tensorflow as tf
+def safe_reading(file):
+    value = file.read()
+    try:
+        value = int(value)
+        return value
+    except:
+        return 0
 
 
 class trainer:
@@ -39,6 +46,7 @@ class trainer:
         self.TICK = config.TICK
         self.globalIter = 0
         self.globalTick = 0
+        self.just_passed = False
         if self.config.resume:
             saved_models = os.listdir("repo/model/")
             iterations = list(
@@ -175,7 +183,7 @@ class trainer:
             # increase linearly every tick, and grow network structure.
             prev_resl = floor(self.resl)
             f = open("continue.txt", "r")
-            if int(f.read()) and not self.flag_flush_gen and not self.flag_flush_dis:
+            if safe_reading(f) and not self.flag_flush_gen and not self.flag_flush_dis:
                 f.close()
                 print("Shift phases")
                 self.resl = floor(self.resl + 1)
@@ -192,7 +200,7 @@ class trainer:
                     self.resl % 1.0 >= (self.trns_tick + self.stab_tick) * delta
                     and prev_resl != 2
                 )
-                or int(f.read())
+                or safe_reading(f)
             ):
                 f.close()
                 if self.fadein["gen"] is not None:
@@ -205,10 +213,11 @@ class trainer:
                 self.fadein["gen"] = None
                 self.complete["gen"] = 0.0
                 self.phase = "dtrns"
+                self.just_passed = True
                 f = open("continue.txt", "w")
                 f.write("0")
             elif self.flag_flush_dis and (
-                (floor(self.resl) != prev_resl and prev_resl != 2) or int(f.read())
+                (floor(self.resl) != prev_resl and prev_resl != 2) or safe_reading(f)
             ):
                 f.close()
                 if self.fadein["dis"] is not None:
@@ -221,6 +230,7 @@ class trainer:
                 self.complete["dis"] = 0.0
                 if floor(self.resl) < self.max_resl and self.phase != "final":
                     self.phase = "gtrns"
+                self.just_passed = True
                 f = open("continue.txt", "w")
                 f.write("0")
             f.close()
@@ -240,6 +250,7 @@ class trainer:
                 ]
                 self.flag_flush_gen = True
                 self.flag_flush_dis = True
+                self.just_passed = True
 
             if (
                 floor(self.resl) >= self.max_resl
@@ -366,6 +377,8 @@ class trainer:
                     self.loader.batchsize,
                 )
             ):
+                if self.just_passed:
+                    continue
                 self.globalIter = self.globalIter + 1
                 self.stack = self.stack + self.loader.batchsize
                 if self.stack > ceil(len(self.loader.dataset)):
@@ -438,16 +451,17 @@ class trainer:
                             self.complete["dis"],
                         ),
                     )
-                    utils.save_image_grid(
-                        self.x.data,
-                        self.loader.dir_path
-                        + "repo/save/grid_real/{}_{}_G{}_D{}.jpg".format(
-                            int(self.globalIter / self.config.save_img_every),
-                            self.phase,
-                            self.complete["gen"],
-                            self.complete["dis"],
-                        ),
-                    )
+                    if self.globalIter % self.config.save_img_every * 10 == 0:
+                        utils.save_image_grid(
+                            self.x.data,
+                            self.loader.dir_path
+                            + "repo/save/grid_real/{}_{}_G{}_D{}.jpg".format(
+                                int(self.globalIter / self.config.save_img_every),
+                                self.phase,
+                                self.complete["gen"],
+                                self.complete["dis"],
+                            ),
+                        )
                     utils.mkdir(
                         self.loader.dir_path
                         + "repo/save/resl_{}".format(int(floor(self.resl)))
@@ -467,17 +481,18 @@ class trainer:
                             self.complete["dis"],
                         ),
                     )
-                    utils.save_image_single(
-                        self.x.data,
-                        self.loader.dir_path
-                        + "repo/save/resl_{}_real/{}_{}_G{}_D{}.jpg".format(
-                            int(floor(self.resl)),
-                            int(self.globalIter / self.config.save_img_every),
-                            self.phase,
-                            self.complete["gen"],
-                            self.complete["dis"],
-                        ),
-                    )
+                    if self.globalIter % self.config.save_img_every * 10 == 0:
+                        utils.save_image_single(
+                            self.x.data,
+                            self.loader.dir_path
+                            + "repo/save/resl_{}_real/{}_{}_G{}_D{}.jpg".format(
+                                int(floor(self.resl)),
+                                int(self.globalIter / self.config.save_img_every),
+                                self.phase,
+                                self.complete["gen"],
+                                self.complete["dis"],
+                            ),
+                        )
 
                 # tensorboard visualization.
                 if self.use_tb:
@@ -494,6 +509,7 @@ class trainer:
                     self.tb.add_image_grid('grid/x_tilde', 4, utils.adjust_dyn_range(self.x_tilde.data.float(), [-1,1], [0,1]), self.globalIter)
                     self.tb.add_image_grid('grid/x_intp', 4, utils.adjust_dyn_range(self.x.data.float(), [-1,1], [0,1]), self.globalIter)
                     """
+            self.just_passed = False
 
     def get_state(self, target):
         if target == "gen":
