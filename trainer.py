@@ -384,8 +384,12 @@ class trainer:
                     self.epoch = self.epoch + 1
                     self.stack = int(self.stack % (ceil(len(self.loader.dataset))))
 
+                f = open("phases.txt", "a")
+                f.write(self.phase + "\n")
+                f.close()
                 # reslolution scheduler.
                 self.resl_scheduler()
+                continue
 
                 # zero gradients.
                 self.G.zero_grad()
