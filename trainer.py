@@ -373,7 +373,7 @@ class trainer:
     def _gradient_penalty(self, gradients):
         # Gradients have shape (batch_size, num_channels, img_width, img_height),
         # so flatten to easily take norm per example in batch
-        gradients = gradients.norm(2, dim=1).mean().data[0]
+        gradients = gradients.norm(2, dim=1).mean().item()
 
         # Derivatives of the gradient close to 0 can cause problems because of
         # the square root, so manually calculate norm and add epsilon
