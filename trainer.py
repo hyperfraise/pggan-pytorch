@@ -12,6 +12,7 @@ import tf_recorder as tensorboard
 import utils as utils
 import numpy as np
 from multiprocessing import Manager, Value
+from torch.autograd import grad as torch_grad
 
 # import tensorflow as tf
 def safe_reading(file):
@@ -432,7 +433,7 @@ class trainer:
                 )
 
                 ### gradient penalty
-                gradient_penalty = self._gradient_penalty(self.x.grad.data)
+                gradient_penalty = self._gradient_penalty(loss_d.grad.data)
                 loss_d += gradient_penalty
 
                 ### epsilon penalty
