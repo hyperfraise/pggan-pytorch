@@ -158,8 +158,8 @@ class trainer:
             self.stab_tick = self.config.stab_tick
 
         self.batchsize = self.loader.batchsize
-        delta = self.accelerate * 1.0 / (2 * self.trns_tick + 2 * self.stab_tick)
-        d_alpha = self.accelerate * 1.0 * self.batchsize / self.trns_tick / self.TICK
+        delta = 1.0 / (2 * self.trns_tick + 2 * self.stab_tick)
+        d_alpha = 1.0 * self.batchsize / self.trns_tick / self.TICK
 
         # update alpha if fade-in layer exist.
         if self.fadein["gen"] is not None:
@@ -398,6 +398,8 @@ class trainer:
                 if self.skip and self.previous_phase == self.phase:
                     continue
                 self.skip = False
+                if iter % self.accelerate != 0:
+                    continue
 
                 # zero gradients.
                 self.G.zero_grad()
