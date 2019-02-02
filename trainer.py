@@ -374,7 +374,6 @@ class trainer:
         # Gradients have shape (batch_size, num_channels, img_width, img_height),
         # so flatten to easily take norm per example in batch
         gradients = gradients.view(self.batchsize, -1)
-        gradients = gradients.norm(2, dim=1).mean().data[0]
         print(gradients)
 
         # Derivatives of the gradient close to 0 can cause problems because of
