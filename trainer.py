@@ -152,8 +152,6 @@ class trainer:
         self.previous_phase = self.phase
         if self.phase[1:] != "trns":
             self.accelerate = 1
-        else:
-            print("accelerate", self.accelerate)
 
         if floor(self.resl) != 2:
             self.trns_tick = self.config.trns_tick
@@ -400,7 +398,7 @@ class trainer:
                 if self.skip and self.previous_phase == self.phase:
                     continue
                 self.skip = False
-                if iter % self.accelerate != 0:
+                if self.globalIter % self.accelerate != 0:
                     continue
 
                 # zero gradients.
