@@ -296,7 +296,7 @@ class trainer:
             torch.cuda.manual_seed(config.random_seed)
 
         # wrapping autograd Variable.
-        self.x = Variable(self.x)
+        self.x = Variable(self.x, requires_grad=True)
         self.x_tilde = Variable(self.x_tilde)
         self.z = Variable(self.z)
         self.real_label = Variable(self.real_label)
