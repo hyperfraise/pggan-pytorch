@@ -18,6 +18,8 @@ def safe_reading(file):
     value = file.read()
     try:
         value = int(value)
+        if value:
+            print("HEYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYy")
         return value
     except:
         return 0
