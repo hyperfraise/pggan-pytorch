@@ -23,6 +23,12 @@ def safe_reading(file):
         return 0
 
 
+def accelerate(value):
+    if value == 1:
+        return 10
+    return value * 2
+
+
 class trainer:
     def __init__(self, config):
         self.config = config
@@ -41,6 +47,7 @@ class trainer:
         self.eps_drift = config.eps_drift
         self.smoothing = config.smoothing
         self.max_resl = config.max_resl
+        self.accelerate = 1
         self.trns_tick = config.trns_tick
         self.stab_tick = config.stab_tick
         self.TICK = config.TICK
@@ -141,14 +148,18 @@ class trainer:
         step 3. (trns_tick) --> transition in discriminator.
         step 4. (stab_tick) --> stabilize.
         """
+
         self.previous_phase = self.phase
+        if self.phase[1:] != "stab":
+            self.accelerate = 1
+
         if floor(self.resl) != 2:
             self.trns_tick = self.config.trns_tick
             self.stab_tick = self.config.stab_tick
 
         self.batchsize = self.loader.batchsize
         delta = 1.0 / (2 * self.trns_tick + 2 * self.stab_tick)
-        d_alpha = 1.0 * self.batchsize / self.trns_tick / self.TICK
+        d_alpha = self.accelerate * 1.0 * self.batchsize / self.trns_tick / self.TICK
 
         # update alpha if fade-in layer exist.
         if self.fadein["gen"] is not None:
@@ -186,7 +197,10 @@ class trainer:
             f = open("continue.txt", "r")
             if safe_reading(f):
                 f.close()
-                self.skip = True
+                if self.phase[1:] == "stab":
+                    self.accelerate = accelerate(self.accelerate)
+                else:
+                    self.skip = True
                 f = open("continue.txt", "w")
                 f.write("0")
             self.resl = self.resl + delta
