@@ -160,6 +160,7 @@ class trainer:
                 and self.resl % 1.0 < (self.trns_tick + self.stab_tick) * delta
             ):
                 self.phase = "gstab"
+                print("begin phase " + self.phase)
         if self.fadein["dis"] is not None:
             if (
                 self.resl % 1.0 >= (self.trns_tick + self.stab_tick) * delta
@@ -173,6 +174,7 @@ class trainer:
                 and self.phase != "final"
             ):
                 self.phase = "dstab"
+                print("begin phase " + self.phase)
 
         prev_kimgs = self.kimgs
         self.kimgs = self.kimgs + self.batchsize
@@ -185,7 +187,7 @@ class trainer:
             f = open("continue.txt", "r")
             if safe_reading(f) and not self.flag_flush_gen and not self.flag_flush_dis:
                 f.close()
-                print("Shift phases")
+                print("increase resl")
                 self.resl = floor(self.resl + 1)
                 f = open("continue.txt", "w")
                 f.write("0")
@@ -213,6 +215,7 @@ class trainer:
                 self.fadein["gen"] = None
                 self.complete["gen"] = 0.0
                 self.phase = "dtrns"
+                print("flush gen, stop fadein gen, begin phase " + self.phase)
                 self.just_passed = True
                 f = open("continue.txt", "w")
                 f.write("0")
@@ -230,6 +233,7 @@ class trainer:
                 self.complete["dis"] = 0.0
                 if floor(self.resl) < self.max_resl and self.phase != "final":
                     self.phase = "gtrns"
+                print("flush dis, stop fadein dis, begin phase " + self.phase)
                 self.just_passed = True
                 f = open("continue.txt", "w")
                 f.write("0")
@@ -251,6 +255,7 @@ class trainer:
                 self.flag_flush_gen = True
                 self.flag_flush_dis = True
                 self.just_passed = True
+                print("flush dis, begin fadein phases")
 
             if (
                 floor(self.resl) >= self.max_resl
