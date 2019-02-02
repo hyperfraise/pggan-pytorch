@@ -433,7 +433,16 @@ class trainer:
                 )
 
                 ### gradient penalty
-                gradient_penalty = self._gradient_penalty(loss_d.grad.data)
+                gradients = torch_grad(
+                    outputs=self.fx,
+                    inputs=self.x,
+                    grad_outputs=torch.ones(self.fx.size()).cuda()
+                    if self.use_cuda
+                    else torch.ones(self.fx.size()),
+                    create_graph=True,
+                    retain_graph=True,
+                )[0]
+                gradient_penalty = self._gradient_penalty(gradients)
                 loss_d += gradient_penalty
 
                 ### epsilon penalty
