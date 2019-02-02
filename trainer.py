@@ -16,7 +16,6 @@ from multiprocessing import Manager, Value
 # import tensorflow as tf
 def safe_reading(file):
     value = file.read()
-    return 1
     try:
         value = int(value)
         return value
@@ -384,7 +383,7 @@ class trainer:
                 if self.skip and self.previous_phase == self.phase:
                     continue
                 self.skip = False
-                continue
+
                 # zero gradients.
                 self.G.zero_grad()
                 self.D.zero_grad()
