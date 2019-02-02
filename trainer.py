@@ -447,7 +447,7 @@ class trainer:
                 loss_d += gradient_penalty
 
                 ### epsilon penalty
-                epsilon_penalty = torch.square(self.fx)
+                epsilon_penalty = (self.fx ** 2).mean()
                 loss_d += epsilon_penalty * self.wgan_epsilon
                 loss_d.backward()
                 self.opt_d.step()
