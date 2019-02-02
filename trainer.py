@@ -189,7 +189,6 @@ class trainer:
             f = open("continue.txt", "r")
             if safe_reading(f):
                 f.close()
-                print("increase resl")
                 self.skip = True
                 f = open("continue.txt", "w")
                 f.write("0")
