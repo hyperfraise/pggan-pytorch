@@ -142,6 +142,7 @@ class trainer:
         step 3. (trns_tick) --> transition in discriminator.
         step 4. (stab_tick) --> stabilize.
         """
+        self.previous_phase = self.phase
         if floor(self.resl) != 2:
             self.trns_tick = self.config.trns_tick
             self.stab_tick = self.config.stab_tick
@@ -256,7 +257,6 @@ class trainer:
                 self.resl = (
                     self.max_resl + (self.stab_tick + self.trns_tick * 2) * delta
                 )
-            self.previous_phase = self.phase
 
     def renew_everything(self):
         # renew dataloader.
