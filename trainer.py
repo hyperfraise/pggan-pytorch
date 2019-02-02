@@ -183,11 +183,11 @@ class trainer:
             prev_resl = floor(self.resl)
             f = open("continue.txt", "r")
             if safe_reading(f) and not self.flag_flush_gen and not self.flag_flush_dis:
-                f.close()
+                # f.close()
                 print("Shift phases")
                 self.resl = floor(self.resl + 1)
-                f = open("continue.txt", "w")
-                f.write("0")
+                # f = open("continue.txt", "w")
+                # f.write("0")
             else:
                 self.resl = self.resl + delta
             f.close()
@@ -201,7 +201,7 @@ class trainer:
                 )
                 or safe_reading(f)
             ):
-                f.close()
+                # f.close()
                 if self.fadein["gen"] is not None:
                     self.fadein["gen"].update_alpha(d_alpha)
                     self.complete["gen"] = self.fadein["gen"].alpha * 100
@@ -213,12 +213,12 @@ class trainer:
                 self.complete["gen"] = 0.0
                 self.phase = "dtrns"
                 self.just_passed = True
-                f = open("continue.txt", "w")
-                f.write("0")
+                # f = open("continue.txt", "w")
+                # f.write("0")
             elif self.flag_flush_dis and (
                 (floor(self.resl) != prev_resl and prev_resl != 2) or safe_reading(f)
             ):
-                f.close()
+                # f.close()
                 if self.fadein["dis"] is not None:
                     self.fadein["dis"].update_alpha(d_alpha)
                     self.complete["dis"] = self.fadein["dis"].alpha * 100
@@ -230,8 +230,8 @@ class trainer:
                 if floor(self.resl) < self.max_resl and self.phase != "final":
                     self.phase = "gtrns"
                 self.just_passed = True
-                f = open("continue.txt", "w")
-                f.write("0")
+                # f = open("continue.txt", "w")
+                # f.write("0")
             f.close()
 
             # grow network.
