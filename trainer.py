@@ -46,12 +46,16 @@ class trainer:
         self.smoothing = config.smoothing
         self.max_resl = config.max_resl
         self.accelerate = 1
+        self.wgan_target = 1.0
         self.trns_tick = config.trns_tick
         self.stab_tick = config.stab_tick
         self.TICK = config.TICK
         self.skip = False
         self.globalIter = 0
         self.globalTick = 0
+        self.wgan_epsilon = 0.001
+        self.stack = 0
+        self.wgan_lambda = 10.0
         self.just_passed = False
         if self.config.resume:
             saved_models = os.listdir("repo/model/")
@@ -365,6 +369,18 @@ class trainer:
         )
         return x + z
 
+    def _gradient_penalty(self, gradient):
+        # Gradients have shape (batch_size, num_channels, img_width, img_height),
+        # so flatten to easily take norm per example in batch
+        gradients = gradients.norm(2, dim=1).mean().data[0]
+
+        # Derivatives of the gradient close to 0 can cause problems because of
+        # the square root, so manually calculate norm and add epsilon
+        gradients_norm = torch.sqrt(torch.sum(gradients ** 2, dim=1) + 1e-12)
+
+        # Return gradient penalty
+        return self.wgan_lambda * ((gradients_norm - 1) ** 2).mean()
+
     def train(self):
         # noise for test.
         self.z_test = torch.FloatTensor(self.loader.batchsize, self.nz)
@@ -414,6 +430,14 @@ class trainer:
                 loss_d = self.mse(self.fx.squeeze(), self.real_label) + self.mse(
                     self.fx_tilde, self.fake_label
                 )
+
+                ### gradient penalty
+                gradient_penalty = self._gradient_penalty(x.grad.data)
+                loss_d += gradient_penalty
+
+                ### epsilon penalty
+                epsilon_penalty = torch.square(self.fx)
+                loss_d += epsilon_penalty * self.wgan_epsilon
                 loss_d.backward()
                 self.opt_d.step()
 
