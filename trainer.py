@@ -192,8 +192,7 @@ class trainer:
                 self.skip = True
                 f = open("continue.txt", "w")
                 f.write("0")
-            else:
-                self.resl = self.resl + delta
+            self.resl = self.resl + delta
             f.close()
             self.resl = max(2, min(10.5, self.resl))  # clamping, range: 4 ~ 1024
             # flush network.
