@@ -16,10 +16,9 @@ from multiprocessing import Manager, Value
 # import tensorflow as tf
 def safe_reading(file):
     value = file.read()
+    return 1
     try:
         value = int(value)
-        if value:
-            print("HEYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYy")
         return value
     except:
         return 0
@@ -185,11 +184,11 @@ class trainer:
             prev_resl = floor(self.resl)
             f = open("continue.txt", "r")
             if safe_reading(f) and not self.flag_flush_gen and not self.flag_flush_dis:
-                # f.close()
+                f.close()
                 print("Shift phases")
                 self.resl = floor(self.resl + 1)
-                # f = open("continue.txt", "w")
-                # f.write("0")
+                f = open("continue.txt", "w")
+                f.write("0")
             else:
                 self.resl = self.resl + delta
             f.close()
@@ -203,37 +202,37 @@ class trainer:
                 )
                 or safe_reading(f)
             ):
-                # f.close()
+                f.close()
                 if self.fadein["gen"] is not None:
                     self.fadein["gen"].update_alpha(d_alpha)
                     self.complete["gen"] = self.fadein["gen"].alpha * 100
                 self.flag_flush_gen = False
                 self.G.module.flush_network()  # flush G
-                print(self.G.module.model)
+                # print(self.G.module.model)
                 # self.Gs.module.flush_network()         # flush Gs
                 self.fadein["gen"] = None
                 self.complete["gen"] = 0.0
                 self.phase = "dtrns"
                 self.just_passed = True
-                # f = open("continue.txt", "w")
-                # f.write("0")
+                f = open("continue.txt", "w")
+                f.write("0")
             elif self.flag_flush_dis and (
                 (floor(self.resl) != prev_resl and prev_resl != 2) or safe_reading(f)
             ):
-                # f.close()
+                f.close()
                 if self.fadein["dis"] is not None:
                     self.fadein["dis"].update_alpha(d_alpha)
                     self.complete["dis"] = self.fadein["dis"].alpha * 100
                 self.flag_flush_dis = False
                 self.D.module.flush_network()  # flush and,
-                print(self.D.module.model)
+                # print(self.D.module.model)
                 self.fadein["dis"] = None
                 self.complete["dis"] = 0.0
                 if floor(self.resl) < self.max_resl and self.phase != "final":
                     self.phase = "gtrns"
                 self.just_passed = True
-                # f = open("continue.txt", "w")
-                # f.write("0")
+                f = open("continue.txt", "w")
+                f.write("0")
             f.close()
 
             # grow network.
@@ -371,12 +370,10 @@ class trainer:
         self.z_test.data.resize_(self.loader.batchsize, self.nz).normal_(0.0, 1.0)
 
         for step in range(2, self.max_resl + 1 + 5):
-            for iter in tqdm(
-                range(
-                    0,
-                    (self.trns_tick * 2 + self.stab_tick * 2) * self.TICK,
-                    self.loader.batchsize,
-                )
+            for iter in range(
+                0,
+                (self.trns_tick * 2 + self.stab_tick * 2) * self.TICK,
+                self.loader.batchsize,
             ):
                 if self.just_passed:
                     continue
