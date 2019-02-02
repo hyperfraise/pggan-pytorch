@@ -270,14 +270,14 @@ class Generator(nn.Module):
                 )  # copy pretrained weights
 
         if resl >= 3 and resl <= 9:
-            print(
-                "growing network[{}x{} to {}x{}]. It may take few seconds...".format(
-                    int(pow(2, resl - 1)),
-                    int(pow(2, resl - 1)),
-                    int(pow(2, resl)),
-                    int(pow(2, resl)),
-                )
-            )
+            # print(
+            #     "growing network[{}x{} to {}x{}]. It may take few seconds...".format(
+            #         int(pow(2, resl - 1)),
+            #         int(pow(2, resl - 1)),
+            #         int(pow(2, resl)),
+            #         int(pow(2, resl)),
+            #     )
+            # )
             low_resl_to_rgb = deepcopy_module(self.model, "to_rgb_block")
             prev_block = nn.Sequential()
             prev_block.add_module(
@@ -298,7 +298,7 @@ class Generator(nn.Module):
 
     def flush_network(self):
         try:
-            print("flushing network... It may take few seconds...")
+            # print("flushing network... It may take few seconds...")
             # make deep copy and paste.
             high_resl_block = deepcopy_module(
                 self.model.concat_block.layer2, "high_resl_block"
@@ -325,7 +325,7 @@ class Generator(nn.Module):
 
     def freeze_layers(self):
         # let's freeze pretrained blocks. (Found freezing layers not helpful, so did not use this func.)
-        print("freeze pretrained weights ... ")
+        # print("freeze pretrained weights ... ")
         for param in self.model.parameters():
             param.requires_grad = False
 
@@ -481,14 +481,14 @@ class Discriminator(nn.Module):
     def grow_network(self, resl):
 
         if resl >= 3 and resl <= 9:
-            print(
-                "growing network[{}x{} to {}x{}]. It may take few seconds...".format(
-                    int(pow(2, resl - 1)),
-                    int(pow(2, resl - 1)),
-                    int(pow(2, resl)),
-                    int(pow(2, resl)),
-                )
-            )
+            # print(
+            #     "growing network[{}x{} to {}x{}]. It may take few seconds...".format(
+            #         int(pow(2, resl - 1)),
+            #         int(pow(2, resl - 1)),
+            #         int(pow(2, resl)),
+            #         int(pow(2, resl)),
+            #     )
+            # )
             low_resl_from_rgb = deepcopy_module(self.model, "from_rgb_block")
             prev_block = nn.Sequential()
             prev_block.add_module("low_resl_downsample", nn.AvgPool2d(kernel_size=2))
@@ -517,7 +517,7 @@ class Discriminator(nn.Module):
 
     def flush_network(self):
         try:
-            print("flushing network... It may take few seconds...")
+            # print("flushing network... It may take few seconds...")
             # make deep copy and paste.
             high_resl_block = deepcopy_module(
                 self.model.concat_block.layer2, "high_resl_block"
