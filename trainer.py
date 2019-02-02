@@ -432,7 +432,7 @@ class trainer:
                 )
 
                 ### gradient penalty
-                gradient_penalty = self._gradient_penalty(x.grad.data)
+                gradient_penalty = self._gradient_penalty(self.x.grad.data)
                 loss_d += gradient_penalty
 
                 ### epsilon penalty
