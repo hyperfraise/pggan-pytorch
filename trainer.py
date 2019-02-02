@@ -255,7 +255,7 @@ class trainer:
                 self.flag_flush_gen = True
                 self.flag_flush_dis = True
                 self.just_passed = True
-                print("flush dis, begin fadein phases")
+                print("grow network, begin fadein phases")
 
             if (
                 floor(self.resl) >= self.max_resl
