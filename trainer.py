@@ -155,6 +155,7 @@ class trainer:
                 self.fadein["gen"].update_alpha(d_alpha)
                 self.complete["gen"] = self.fadein["gen"].alpha * 100
                 self.phase = "gtrns"
+                print("begin phase " + self.phase)
             elif (
                 self.resl % 1.0 >= (self.trns_tick) * delta
                 and self.resl % 1.0 < (self.trns_tick + self.stab_tick) * delta
@@ -169,6 +170,7 @@ class trainer:
                 self.fadein["dis"].update_alpha(d_alpha)
                 self.complete["dis"] = self.fadein["dis"].alpha * 100
                 self.phase = "dtrns"
+                print("begin phase " + self.phase)
             elif (
                 self.resl % 1.0 >= (self.stab_tick + self.trns_tick * 2) * delta
                 and self.phase != "final"
