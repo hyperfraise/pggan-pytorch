@@ -370,7 +370,7 @@ class trainer:
         )
         return x + z
 
-    def _gradient_penalty(self, gradient):
+    def _gradient_penalty(self, gradients):
         # Gradients have shape (batch_size, num_channels, img_width, img_height),
         # so flatten to easily take norm per example in batch
         gradients = gradients.norm(2, dim=1).mean().data[0]
