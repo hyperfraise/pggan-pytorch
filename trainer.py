@@ -45,6 +45,7 @@ class trainer:
         self.trns_tick = config.trns_tick
         self.stab_tick = config.stab_tick
         self.TICK = config.TICK
+        self.skip = False
         self.globalIter = 0
         self.globalTick = 0
         self.just_passed = False
@@ -155,7 +156,6 @@ class trainer:
                 self.fadein["gen"].update_alpha(d_alpha)
                 self.complete["gen"] = self.fadein["gen"].alpha * 100
                 self.phase = "gtrns"
-                print("begin phase " + self.phase)
             elif (
                 self.resl % 1.0 >= (self.trns_tick) * delta
                 and self.resl % 1.0 < (self.trns_tick + self.stab_tick) * delta
@@ -170,7 +170,6 @@ class trainer:
                 self.fadein["dis"].update_alpha(d_alpha)
                 self.complete["dis"] = self.fadein["dis"].alpha * 100
                 self.phase = "dtrns"
-                print("begin phase " + self.phase)
             elif (
                 self.resl % 1.0 >= (self.stab_tick + self.trns_tick * 2) * delta
                 and self.phase != "final"
@@ -190,7 +189,7 @@ class trainer:
             if safe_reading(f) and not self.flag_flush_gen and not self.flag_flush_dis:
                 f.close()
                 print("increase resl")
-                self.resl = floor(self.resl + 1)
+                self.skip = True
                 f = open("continue.txt", "w")
                 f.write("0")
             else:
@@ -267,6 +266,7 @@ class trainer:
                 self.resl = (
                     self.max_resl + (self.stab_tick + self.trns_tick * 2) * delta
                 )
+            self.previous_phase = self.phase
 
     def renew_everything(self):
         # renew dataloader.
@@ -395,8 +395,10 @@ class trainer:
                 f.close()
                 # reslolution scheduler.
                 self.resl_scheduler()
+                if self.skip and self.previous_phase == self.phase:
+                    continue
+                self.skip = False
                 continue
-
                 # zero gradients.
                 self.G.zero_grad()
                 self.D.zero_grad()
