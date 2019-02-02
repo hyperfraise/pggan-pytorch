@@ -162,7 +162,6 @@ class trainer:
                 and self.resl % 1.0 < (self.trns_tick + self.stab_tick) * delta
             ):
                 self.phase = "gstab"
-                print("begin phase " + self.phase)
         if self.fadein["dis"] is not None:
             if (
                 self.resl % 1.0 >= (self.trns_tick + self.stab_tick) * delta
@@ -176,7 +175,6 @@ class trainer:
                 and self.phase != "final"
             ):
                 self.phase = "dstab"
-                print("begin phase " + self.phase)
 
         prev_kimgs = self.kimgs
         self.kimgs = self.kimgs + self.batchsize
