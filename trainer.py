@@ -150,7 +150,7 @@ class trainer:
         """
 
         self.previous_phase = self.phase
-        if self.phase[1:] != "stab":
+        if self.phase[1:] != "trns":
             self.accelerate = 1
 
         if floor(self.resl) != 2:
@@ -158,7 +158,7 @@ class trainer:
             self.stab_tick = self.config.stab_tick
 
         self.batchsize = self.loader.batchsize
-        delta = 1.0 / (2 * self.trns_tick + 2 * self.stab_tick)
+        delta = self.accelerate * 1.0 / (2 * self.trns_tick + 2 * self.stab_tick)
         d_alpha = self.accelerate * 1.0 * self.batchsize / self.trns_tick / self.TICK
 
         # update alpha if fade-in layer exist.
@@ -167,6 +167,7 @@ class trainer:
                 self.fadein["gen"].update_alpha(d_alpha)
                 self.complete["gen"] = self.fadein["gen"].alpha * 100
                 self.phase = "gtrns"
+                print(self.fadein["gen"].alpha)
             elif (
                 self.resl % 1.0 >= (self.trns_tick) * delta
                 and self.resl % 1.0 < (self.trns_tick + self.stab_tick) * delta
@@ -180,6 +181,7 @@ class trainer:
                 self.fadein["dis"].update_alpha(d_alpha)
                 self.complete["dis"] = self.fadein["dis"].alpha * 100
                 self.phase = "dtrns"
+                print(self.fadein["dis"].alpha)
             elif (
                 self.resl % 1.0 >= (self.stab_tick + self.trns_tick * 2) * delta
                 and self.phase != "final"
@@ -197,7 +199,7 @@ class trainer:
             f = open("continue.txt", "r")
             if safe_reading(f):
                 f.close()
-                if self.phase[1:] == "stab":
+                if self.phase[1:] == "trns":
                     self.accelerate = accelerate(self.accelerate)
                 else:
                     self.skip = True
