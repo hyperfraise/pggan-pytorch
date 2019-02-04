@@ -30,7 +30,7 @@ class dataloader:
         }  # change this according to available gpu memory.
         self.batchsize = int(self.batch_table[pow(2, 2)])  # we start from 2^2=4
         self.imsize = int(pow(2, 2))
-        self.num_workers = 4
+        self.num_workers = 10
 
     def renew(self, resl):
         print(
