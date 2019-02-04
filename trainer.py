@@ -1,3 +1,8 @@
+import torch.multiprocessing as mp
+
+if __name__ == "__main__":
+    # freeze_support()
+    mp.set_start_method("spawn")
 import dataloader as DL
 from config import config
 import network as net
