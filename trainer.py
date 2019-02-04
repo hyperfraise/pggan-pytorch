@@ -233,7 +233,6 @@ class trainer:
 
             # grow network.
             if floor(self.resl) != prev_resl and floor(self.resl) < self.max_resl + 1:
-                self.lr = self.lr * float(self.config.lr_decay)
                 self.G.module.grow_network(floor(self.resl))
                 # self.Gs.grow_network(floor(self.resl))
                 self.D.module.grow_network(floor(self.resl))
