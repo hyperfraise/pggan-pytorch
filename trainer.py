@@ -17,16 +17,20 @@ import tf_recorder as tensorboard
 import utils as utils
 import numpy as np
 from multiprocessing import Manager, Value
+from torch.autograd import grad as torch_grad
 
 # import tensorflow as tf
 def safe_reading(file):
     value = file.read()
-    return 1
     try:
         value = int(value)
         return value
     except:
         return 0
+
+
+def accelerate(value):
+    return value * 2
 
 
 class trainer:
@@ -47,12 +51,17 @@ class trainer:
         self.eps_drift = config.eps_drift
         self.smoothing = config.smoothing
         self.max_resl = config.max_resl
+        self.accelerate = 1
+        self.wgan_target = 1.0
         self.trns_tick = config.trns_tick
         self.stab_tick = config.stab_tick
         self.TICK = config.TICK
         self.skip = False
         self.globalIter = 0
         self.globalTick = 0
+        self.wgan_epsilon = 0.001
+        self.stack = 0
+        self.wgan_lambda = 10.0
         self.just_passed = False
         if self.config.resume:
             saved_models = os.listdir("repo/model/")
@@ -151,7 +160,11 @@ class trainer:
         step 3. (trns_tick) --> transition in discriminator.
         step 4. (stab_tick) --> stabilize.
         """
+
         self.previous_phase = self.phase
+        if self.phase[1:] != "trns":
+            self.accelerate = 1
+
         if floor(self.resl) != 2:
             self.trns_tick = self.config.trns_tick
             self.stab_tick = self.config.stab_tick
@@ -196,7 +209,10 @@ class trainer:
             f = open("continue.txt", "r")
             if safe_reading(f):
                 f.close()
-                self.skip = True
+                if self.phase[1:] == "trns":
+                    self.accelerate = accelerate(self.accelerate)
+                else:
+                    self.skip = True
                 f = open("continue.txt", "w")
                 f.write("0")
             self.resl = self.resl + delta
@@ -288,7 +304,7 @@ class trainer:
             torch.cuda.manual_seed(config.random_seed)
 
         # wrapping autograd Variable.
-        self.x = Variable(self.x)
+        self.x = Variable(self.x, requires_grad=True)
         self.x_tilde = Variable(self.x_tilde)
         self.z = Variable(self.z)
         self.real_label = Variable(self.real_label)
@@ -362,6 +378,17 @@ class trainer:
         )
         return x + z
 
+    def _gradient_penalty(self, gradients):
+        # Gradients have shape (batch_size, num_channels, img_width, img_height),
+        # so flatten to easily take norm per example in batch
+        gradients = gradients.view(self.batchsize, -1)
+        # Derivatives of the gradient close to 0 can cause problems because of
+        # the square root, so manually calculate norm and add epsilon
+        gradients_norm = torch.sqrt(torch.sum(gradients ** 2, dim=1) + 1e-12)
+
+        # Return gradient penalty
+        return self.wgan_lambda * ((gradients_norm - 1) ** 2).mean()
+
     def train(self):
         # noise for test.
         self.z_test = torch.FloatTensor(self.loader.batchsize, self.nz)
@@ -371,10 +398,12 @@ class trainer:
         self.z_test.data.resize_(self.loader.batchsize, self.nz).normal_(0.0, 1.0)
 
         for step in range(2, self.max_resl + 1 + 5):
-            for iter in range(
-                0,
-                (self.trns_tick * 2 + self.stab_tick * 2) * self.TICK,
-                self.loader.batchsize,
+            for iter in tqdm(
+                range(
+                    0,
+                    (self.trns_tick * 2 + self.stab_tick * 2) * self.TICK,
+                    self.loader.batchsize,
+                )
             ):
                 if self.just_passed:
                     continue
@@ -384,15 +413,14 @@ class trainer:
                     self.epoch = self.epoch + 1
                     self.stack = int(self.stack % (ceil(len(self.loader.dataset))))
 
-                f = open("phases.txt", "a")
-                f.write(self.phase + "\n")
-                f.close()
                 # reslolution scheduler.
                 self.resl_scheduler()
                 if self.skip and self.previous_phase == self.phase:
                     continue
                 self.skip = False
-                continue
+                if self.globalIter % self.accelerate != 0:
+                    continue
+
                 # zero gradients.
                 self.G.zero_grad()
                 self.D.zero_grad()
@@ -410,6 +438,23 @@ class trainer:
                 loss_d = self.mse(self.fx.squeeze(), self.real_label) + self.mse(
                     self.fx_tilde, self.fake_label
                 )
+
+                ### gradient penalty
+                gradients = torch_grad(
+                    outputs=self.fx,
+                    inputs=self.x,
+                    grad_outputs=torch.ones(self.fx.size()).cuda()
+                    if self.use_cuda
+                    else torch.ones(self.fx.size()),
+                    create_graph=True,
+                    retain_graph=True,
+                )[0]
+                gradient_penalty = self._gradient_penalty(gradients)
+                loss_d += gradient_penalty
+
+                ### epsilon penalty
+                epsilon_penalty = (self.fx ** 2).mean()
+                loss_d += epsilon_penalty * self.wgan_epsilon
                 loss_d.backward()
                 self.opt_d.step()
 
