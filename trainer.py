@@ -108,13 +108,17 @@ class trainer:
         # define tensors, ship model to cuda, and get dataloader.
         self.renew_everything()
         if self.resuming:
-            while self.globalTick != self.last_iteration:
-                self.resl_scheduler()
-            while ((self.kimgs + self.batchsize) % self.TICK) >= (
-                self.kimgs % self.TICK
-            ):
-                self.resl_scheduler()
-            self.epoch = int(self.last_iteration * 1000 / len(self.loader.dataset))
+            self.resl = G_weights["resl"]
+            self.globalIter = G_weights["globalIter"]
+            self.globalTick = G_weights["globalTick"]
+            self.kimgs = G_weights["kimgs"]
+            self.epoch = G_weights["epoch"]
+            self.phase = G_weights["phase"]
+            self.fadein = G_weights["fadein"]
+            self.complete = G_weights["complete"]
+            self.flag_flush_gen = G_weights["flag_flush_gen"]
+            self.flag_flush_dis = G_weights["flag_flush_dis"]
+            self.stack = G_weights["stack"]
 
             print(
                 "Resuming at "
@@ -522,6 +526,13 @@ class trainer:
                 "optimizer": self.opt_g.state_dict(),
                 "globalIter": self.globalIter,
                 "globalTick": self.globalTick,
+                "phase": self.phase,
+                "epoch": self.epoch,
+                "kimgs": self.kimgs,
+                "fadein": self.fadein,
+                "complete": self.complete,
+                "flag_flush_gen": self.flag_flush_gen,
+                "flag_flush_dis": self.flag_flush_dis,
             }
             return state
         elif target == "dis":
@@ -531,6 +542,13 @@ class trainer:
                 "optimizer": self.opt_d.state_dict(),
                 "globalIter": self.globalIter,
                 "globalTick": self.globalTick,
+                "phase": self.phase,
+                "epoch": self.epoch,
+                "kimgs": self.kimgs,
+                "fadein": self.fadein,
+                "complete": self.complete,
+                "flag_flush_gen": self.flag_flush_gen,
+                "flag_flush_dis": self.flag_flush_dis,
             }
             return state
 
